@@ -1,5 +1,6 @@
 from datetime import datetime
 from pompa import db
+from flask_login import UserMixin
 
 Model_Has_Role = db.Table('Model_Has_Role',
                           db.Column('role_id', db.Integer, db.ForeignKey(
@@ -84,7 +85,7 @@ class Role(db.Model):
             return 0
 
 
-class User(db.Model):
+class User(db.Model, UserMixin):
     __tablename__ = 'user'
 
     id = db.Column(db.Integer,
