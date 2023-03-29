@@ -1,5 +1,13 @@
 {% extends "base.html" %}
 
+{% block flashes %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% include "flash.html" %}
+    {% endif %}
+    {% endwith %}
+{% endblock %}
+
 {% block main %} 
 <main>
     <div class="container">

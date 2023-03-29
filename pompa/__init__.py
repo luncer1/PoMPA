@@ -7,6 +7,8 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://sql7606803:eJVv2Ghdaa@sql7.freesqldatabase.com:3306/sql7606803'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'sd$sdf45dR565er6DF65drtw43dft65uy8uji6576547'
+app.config['SESSION_TYPE'] = 'memcache'
+app.config['PERMANENT_SESSION_LIFETIME'] = 1800
 db = SQLAlchemy(app)
 bcrpyt = Bcrypt(app)
 
