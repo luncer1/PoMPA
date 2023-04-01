@@ -16,6 +16,10 @@ bcrpyt = Bcrypt(app)
 class Anonymous(AnonymousUserMixin):
     def __init__(self):
         self.email = 'Guest'
+        self.name = 'Guest'
+
+    def get_all_permissions(self):
+        return {}
 
 
 login_manager = LoginManager()
