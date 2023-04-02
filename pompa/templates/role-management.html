@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% block flashes %}
+{% with messages = get_flashed_messages(with_categories = true) %}
+{% if messages %}
+{% include "flash.html" %}
+{% endif %}
+{% endwith %}
+{% endblock %}
+{% block header %}
+{% include 'top-navbar.html' %}
+{% endblock header %}
+
+{% block menu %}
+{% include 'menu.html' %}
+{% endblock menu %}
+
+{% block main %}
+<main id="main" class="main">
+
+    <div class="pagetitle">
+        <h1>Zarządzanie Rolami</h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="index.html">Home</a></li>
+                <li class="breadcrumb-item">Role i Prawa</li>
+                <li class="breadcrumb-item active">Zarządzanie Rolami</li>
+            </ol>
+        </nav>
+    </div><!-- End Page Title -->
+
+    <section class="section">
+        <div class="row">
+            <div class="col-lg-6">
+
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Dodaj Role</h5>
+                        <p>This is an examle page with no contrnt. You can use it as a starter for your custom pages.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="col-lg-6">
+
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Edytuj Role</h5>
+                        <p>This is an examle page with no contrnt. You can use it as a starter for your custom pages.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-6">
+
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Role - Użytkownicy</h5>
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Imie i nazwisko</th>
+                                    <th scope="col">E-mail</th>
+                                    <th scope="col">Data Urodzenia</th>
+                                    <th scope="col">Role</th>
+                                    <th scope="col">Edytuj</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <div class="modal fade" id="role-users" tabindex="-1">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                    aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary"
+                                                    data-bs-dismiss="modal">Close</button>
+                                                <button type="button" data-current-user=""
+                                                    class="btn btn-primary save-role-user" data-bs-dismiss="modal">Save
+                                                    changes</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% for single_user in all_users %}
+
+                                <tr id="user{{single_user.id}}">
+                                    <th scope="row">{{ single_user.id }}</th>
+                                    <td>{{ single_user.name }} {{ single_user.sur_name }}</td>
+                                    <td>{{ single_user.email }}</td>
+                                    <td>{{ single_user.birth_date }}</td>
+                                    <td class="user-roles">{% for role in single_user.roles %} {{ role}}{%if not
+                                        loop.last%}, {% endif %}{%
+                                        endfor %}</td>
+                                    <td><button type="button" class="btn btn-primary btn-sm edit-user-role"
+                                            data-user-id="{{ single_user.id }}">
+                                            <i class="bi bi-info-circle"></i>
+                                        </button></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="col-lg-6">
+
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Role - Prawa</h5>
+                        <p>This is an examle page with no contrnt. You can use it as a starter for your custom pages.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+</main>
+{% endblock main %}
+
+{% block footer %}
+{% include 'footer.html' %}
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script>
+    $('.edit-user-role').click(function () {
+        $.ajax({
+            type: "POST",
+            url: "{{ url_for('role_management') }}",
+            data: {
+                'current_operation': 'edit-role',
+                'user_id': $(this).data('user-id')
+            },
+            success: function (data) {
+                data = JSON.parse(data)
+                $('.save-role-user').data('current-user', data['user_id'])
+                $('#role-users').modal('show');
+                $('#role-users .modal-title').text(data['full_name']);
+                $('#role-users .modal-body').text('')
+                data['all_roles'].forEach(function (currentValue, index, arr) {
+                    $('#role-users .modal-body').append($(`<button type="button" style="margin-right:5px" class="btn ${jQuery.inArray(currentValue, data['user_roles']) == -1 ? 'btn-danger' : 'btn-success'} ${(data['user_id'] == '{{user.id}}' && currentValue == 'Admin') ? 'disabled' : ''} rounded-pill">${currentValue}</button>`).on('click', function () {
+                        if (data['user_id'] != '{{user.id}}' || currentValue != 'Admin') {
+                            $(this).toggleClass('btn-success');
+                            $(this).toggleClass('btn-danger');
+                        }
+                    }))
+                })
+            }
+        })
+    })
+    $('.save-role-user').click(function () {
+        let selected_roles = []
+        $('#role-users .btn-success').each(function () {
+            selected_roles.push($(this).text())
+        })
+        $.ajax({
+            type: "POST",
+            url: "{{ url_for('role_management') }}",
+            traditional: true,
+            data: {
+                'current_operation': 'save-role',
+                'user_id': $(this).data('current-user'),
+                'roles': [selected_roles]
+            },
+            success: function (data) {
+                data = JSON.parse(data);
+                let all_roles = [];
+                data['user_roles'].forEach(function (currentValue, index, arr) {
+                    all_roles.push(' ' + currentValue)
+
+                })
+                $('#user' + data['user_id'] + ' .user-roles').text(all_roles)
+            }
+        })
+    })
+
+
+</script>
+{% endblock footer %}

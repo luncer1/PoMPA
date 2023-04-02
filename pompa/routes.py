@@ -3,9 +3,12 @@ from flask import render_template, request, redirect, url_for, flash
 from pompa import app, db
 from pompa.forms import LoginForm, RegisterForm
 from pompa import bcrpyt
-from pompa.models import User, Permission
+from pompa.models import User, Permission, Role
 from flask_login import login_required, login_user, logout_user, current_user
 import json
+import time
+
+create_database = False
 
 
 def login_only_for_guest(f):
@@ -41,6 +44,9 @@ def dashboard():
 @app.route('/login', methods=['POST', 'GET'])
 @login_only_for_guest
 def login():
+    if create_database == True:
+        db.create_all()
+        db.session.commit()
     form = LoginForm()
     if request.method == 'POST':
         if form.is_submitted():
@@ -107,3 +113,41 @@ def profile(id):
         flash('Nie ma takiego użytkownika', 'error')
         return redirect(url_for('dashboard'))
     return render_template('profile.html', user=current_user, viewed_user=user)
+
+
+@app.route('/role-management', methods=['GET', 'POST'])
+@login_required
+def role_management():
+    all_users = User.query.all()
+    all_roles = Role.query.all()
+
+    if request.method == 'POST':
+        if request.form.get('current_operation') == 'edit-role':
+            selected_user = User.query.filter_by(
+                id=request.form.get('user_id')).first()
+            return json.dumps({'full_name': selected_user.name + " " + selected_user.sur_name,
+                               'all_roles': [role.name for role in all_roles],
+                               'user_roles': [role.name for role in selected_user.roles],
+                               'user_id': request.form.get('user_id')})
+        elif request.form.get('current_operation') == 'save-role':
+            selected_user = User.query.filter_by(
+                id=request.form.get('user_id')).first()
+            if request.form.get('roles') == "":
+                selected_roles = ""
+            else:
+                selected_roles = request.form.get('roles').split(',')
+
+            for role in selected_roles:
+                role_object = Role.query.filter_by(name=role).first()
+                if role_object not in selected_user.roles:
+                    selected_user.add_role(role_object)
+            selected_user.submit_changes(current_user.id)
+            for role in selected_user.roles[:]:
+                if role.name not in selected_roles:
+                    selected_user.remove_role(role)
+                    selected_user.submit_changes(current_user.id)
+
+            return json.dumps({'user_roles': [role.name for role in selected_user.roles],
+                               'user_id': request.form.get('user_id')})
+
+    return render_template('role-management.html', user=current_user, all_users=all_users, all_roles=all_roles)
