@@ -119,7 +119,7 @@ def profile(id):
 @login_required
 def role_management():
     all_users = User.query.all()
-    all_roles = Role.query.all()
+    all_roles = Role.query.filter_by(is_active=1).all()
 
     if request.method == 'POST':
         if request.form.get('current_operation') == 'edit-role':
@@ -149,5 +149,27 @@ def role_management():
 
             return json.dumps({'user_roles': [role.name for role in selected_user.roles],
                                'user_id': request.form.get('user_id')})
+        elif request.form.get('current_operation') == 'add-role':
+            if request.form.get('role_name') == "":
+                return json.dumps({'result': 'error', 'message': 'Uzupełnij nazwę roli'})
+            elif Role.query.filter_by(name=request.form.get('role_name')).first():
+                return json.dumps({'result': 'error', 'message': 'Taka rola już istnieje'})
+            else:
+                return json.dumps({'result': 'success', 'message': 'Potwierdź'})
+        elif request.form.get('current_operation') == 'add-role-confirm':
+            if request.form.get('role_name') == "":
+                flash('Błąd podczas dodawania roli', 'error')
+                return json.dumps({'result': 'error', 'message': 'Uzupełnij nazwę roli'})
+            elif Role.query.filter_by(name=request.form.get('role_name')).first():
+                flash('Błąd podczas dodawania roli', 'error')
+                return json.dumps({'result': 'error', 'message': 'Taka rola już istnieje'})
+            else:
+                new_role = Role(name=request.form.get(
+                    'role_name'), is_active=1)
+                db.session.add(new_role)
+                db.session.commit()
+                new_role.submit_changes(current_user.id)
+                flash('Rola dodana', 'success')
+                return json.dumps({'result': 'success', 'message': 'Potwierdź'})
 
     return render_template('role-management.html', user=current_user, all_users=all_users, all_roles=all_roles)

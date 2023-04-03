@@ -35,8 +35,17 @@
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title">Dodaj Role</h5>
-                        <p>This is an examle page with no contrnt. You can use it as a starter for your custom pages.
-                        </p>
+                        <form>
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="add-role-form" placeholder="Nazwa Roli">
+                                <label for="floatingInput">Nazwa Roli</label>
+                                <div class="add-role_invalid invalid-feedback">
+                                </div>
+                            </div>
+                            <div class="col-sm-10">
+                                <button type="button" id="add-role-btn" class="btn btn-primary">Dodaj</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
 
@@ -58,7 +67,9 @@
             <div class="col-lg-6">
 
                 <div class="card">
+
                     <div class="card-body">
+
                         <h5 class="card-title">Role - Użytkownicy</h5>
                         <table class="table table-hover">
                             <thead>
@@ -85,10 +96,10 @@
                                             </div>
                                             <div class="modal-footer">
                                                 <button type="button" class="btn btn-secondary"
-                                                    data-bs-dismiss="modal">Close</button>
+                                                    data-bs-dismiss="modal">Zamknij</button>
                                                 <button type="button" data-current-user=""
-                                                    class="btn btn-primary save-role-user" data-bs-dismiss="modal">Save
-                                                    changes</button>
+                                                    class="btn btn-primary save-role-user"
+                                                    data-bs-dismiss="modal">Zapisz</button>
                                             </div>
                                         </div>
                                     </div>
@@ -105,7 +116,7 @@
                                         endfor %}</td>
                                     <td><button type="button" class="btn btn-primary btn-sm edit-user-role"
                                             data-user-id="{{ single_user.id }}">
-                                            <i class="bi bi-info-circle"></i>
+                                            <i class="bi bi-pencil-square"></i>
                                         </button></td>
                                 </tr>
                                 {% endfor %}
@@ -187,7 +198,46 @@
             }
         })
     })
+    $('#add-role-btn').click(function () {
+        $('.add-role_invalid').css('display', 'none');
+        let role =
+            $.ajax({
+                type: "POST",
+                url: "{{ url_for('role_management') }}",
+                data: {
+                    'current_operation': 'add-role',
+                    'role_name': $('#add-role-form').val()
+                },
+                success: function (data) {
+                    data = JSON.parse(data)
+                    if (data['result'] == 'error') {
+                        $('.add-role_invalid').html(data['message']);
+                        $('.add-role_invalid').css('display', 'block');
+                    }
+                    else if (data['result'] == 'success') {
+                        $('#add-role-form').prop('disabled', true);
+                        $('#add-role-btn').replaceWith(`<button type="button" id="add-role-btn-confirm" class="btn btn-success">${data['message']}</button>`)
 
+                    }
+                }
+            })
+
+
+    })
+    $(document).on('click', '#add-role-btn-confirm', function () {
+        $.ajax({
+            type: "POST",
+            url: "{{ url_for('role_management') }}",
+            data: {
+                'current_operation': 'add-role-confirm',
+                'role_name': $('#add-role-form').val()
+            },
+            success: function (data) {
+                location.reload()
+            }
+        })
+
+    })
 
 </script>
 {% endblock footer %}
