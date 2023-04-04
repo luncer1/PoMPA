@@ -148,10 +148,16 @@
 {% include 'footer.html' %}
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
 <script>
+    $(window).keydown(function (event) {
+        if (event.keyCode == 13) {
+            event.preventDefault();
+            return false;
+        }
+    });
     $('.edit-user-role').click(function () {
         $.ajax({
             type: "POST",
-            url: "{{ url_for('role_management') }}",
+            url: "{{ url_for('api_role_management_user_edit_role') }}",
             data: {
                 'current_operation': 'edit-role',
                 'user_id': $(this).data('user-id')
@@ -180,7 +186,7 @@
         })
         $.ajax({
             type: "POST",
-            url: "{{ url_for('role_management') }}",
+            url: "{{ url_for('api_role_management_user_save_role') }}",
             traditional: true,
             data: {
                 'current_operation': 'save-role',
@@ -203,9 +209,8 @@
         let role =
             $.ajax({
                 type: "POST",
-                url: "{{ url_for('role_management') }}",
+                url: "{{ url_for('api_role_management_add') }}",
                 data: {
-                    'current_operation': 'add-role',
                     'role_name': $('#add-role-form').val()
                 },
                 success: function (data) {
@@ -227,9 +232,8 @@
     $(document).on('click', '#add-role-btn-confirm', function () {
         $.ajax({
             type: "POST",
-            url: "{{ url_for('role_management') }}",
+            url: "{{ url_for('api_role_management_add_confirm') }}",
             data: {
-                'current_operation': 'add-role-confirm',
                 'role_name': $('#add-role-form').val()
             },
             success: function (data) {
