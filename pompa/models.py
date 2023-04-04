@@ -38,7 +38,7 @@ class Permission(db.Model):
         'Role', secondary=Role_Has_Permission, backref='permissions')
 
     def __repr__(self):
-        return f"Permission({self.id},{self.name})"
+        return f"{str(self.name)}"
 
     def submit_changes(self, user_id):
         if self.created_by == None:
@@ -52,7 +52,7 @@ class Role(db.Model):
 
     id = db.Column(db.Integer,
                    autoincrement='auto', primary_key=True)
-    name = db.Column(db.String(50), nullable=False)
+    name = db.Column(db.String(50), nullable=False, unique=True)
     is_active = db.Column(db.Boolean, default=True)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
     modified_by = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -62,7 +62,7 @@ class Role(db.Model):
                             onupdate=datetime.now)
 
     def __repr__(self):
-        return f"Role({self.id},{self.name},Active:{self.is_active})"
+        return f"{str(self.name)}"
 
     def submit_changes(self, user_id):
         if self.created_by == None:
@@ -94,6 +94,7 @@ class User(db.Model, UserMixin):
     sur_name = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(200), nullable=False, unique=True)
     password = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(1000), default="Brak opisu.")
     birth_date = db.Column(db.Date, nullable=False)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
     modified_by = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -148,8 +149,8 @@ class User(db.Model, UserMixin):
         for role in self.roles:
             for permission in role.permissions:
                 if permission not in permissions:
-                    permissions.append(permission)
+                    permissions.append(str(permission))
         for permission in self.permissions:
             if permission not in permissions:
-                permissions.append(permission)
+                permissions.append(str(permission))
         return permissions

@@ -1,7 +1,6 @@
 from wtforms import StringField, PasswordField, SubmitField, DateField, EmailField
 from wtforms.validators import DataRequired, Length, ValidationError, Email
 from pompa.models import User
-from pompa import db
 from flask_wtf import FlaskForm
 from pompa.models import User
 
