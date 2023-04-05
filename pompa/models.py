@@ -38,7 +38,7 @@ class Permission(db.Model):
         'Role', secondary=Role_Has_Permission, backref='permissions')
 
     def __repr__(self):
-        return f"Permission({self.id},{self.name})"
+        return f"{str(self.name)}"
 
     def submit_changes(self, user_id):
         if self.created_by == None:
@@ -52,7 +52,7 @@ class Role(db.Model):
 
     id = db.Column(db.Integer,
                    autoincrement='auto', primary_key=True)
-    name = db.Column(db.String(50), nullable=False)
+    name = db.Column(db.String(50), nullable=False, unique=True)
     is_active = db.Column(db.Boolean, default=True)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
     modified_by = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -62,7 +62,7 @@ class Role(db.Model):
                             onupdate=datetime.now)
 
     def __repr__(self):
-        return f"{self.name}"
+        return f"{str(self.name)}"
 
     def submit_changes(self, user_id):
         if self.created_by == None:
@@ -83,7 +83,7 @@ class Role(db.Model):
             return 1
         else:
             return 0
-        
+
 
 class User(db.Model, UserMixin):
     __tablename__ = 'user'
@@ -153,10 +153,10 @@ class User(db.Model, UserMixin):
         for role in self.roles:
             for permission in role.permissions:
                 if permission not in permissions:
-                    permissions.append(permission)
+                    permissions.append(str(permission))
         for permission in self.permissions:
             if permission not in permissions:
-                permissions.append(permission)
+                permissions.append(str(permission))
         return permissions
 
 
