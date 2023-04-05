@@ -119,7 +119,8 @@ def profile(id):
 @login_required
 def role_management():
     all_users = User.query.all()
-    all_roles = Role.query.filter_by(is_active=1).all()
+    all_roles = Role.query.all()
+
     return render_template('role-management.html', user=current_user, all_users=all_users, all_roles=all_roles)
 
 
@@ -187,3 +188,55 @@ def api_role_management_add_confirm():
             new_role.submit_changes(current_user.id)
             flash('Rola dodana', 'success')
             return json.dumps({'result': 'success', 'message': 'Potwierdź'})
+
+
+@app.route('/role-management/edit-role', methods=['POST'])
+def api_role_management_edit_role():
+    if request.method == 'POST':
+        selected_role = Role.query.filter_by(
+            id=request.form.get('role_id')).first()
+        if selected_role.name == "Admin":
+            flash('Nie możesz edytować admina', 'error')
+            return '', 400
+        return json.dumps({'role': selected_role.name,
+                           'is_active': selected_role.is_active,
+                           'role_id': selected_role.id
+                           })
+
+
+@app.route('/role-management/save-role', methods=['POST'])
+def api_role_management_save_role():
+    if request.method == 'POST':
+        return_json = {}
+        selected_role = Role.query.filter_by(
+            id=request.form.get('role_id')).first()
+        if request.form.get('is_active') == 'false':
+            if len(selected_role.asignees) != 0:
+                return json.dumps({
+                    'message': "Nie można wyłączyć roli, do której są przypisani użytkownicy", 'error_for': 'switch'}), 400
+            else:
+                selected_role.is_active = 0
+                db.session.commit()
+                selected_role.submit_changes(current_user.id)
+                return_json['role_id'] = request.form.get('role_id')
+                return_json['value'] = '0'
+                return_json['role'] = selected_role.name
+        if request.form.get('is_active') == 'true' and selected_role.is_active == 0:
+            selected_role.is_active = 1
+            db.session.commit()
+            selected_role.submit_changes(current_user.id)
+            return_json['role_id'] = request.form.get('role_id')
+            return_json['value'] = '1'
+            return_json['role'] = selected_role.name
+        if request.form.get('role') != selected_role.name:
+            for role in Role.query.all():
+                if role.name == request.form.get('role'):
+                    return json.dumps({
+                        'message': "Nazwa roli musi być unikalna", 'error_for': 'change'}), 400
+            selected_role.name = request.form.get('role')
+            db.session.commit()
+            selected_role.submit_changes(current_user.id)
+            return_json['role_id'] = request.form.get('role_id')
+            return_json['value'] = selected_role.is_active
+            return_json['role'] = selected_role.name
+        return json.dumps(return_json), 200
