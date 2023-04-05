@@ -94,8 +94,10 @@ class User(db.Model, UserMixin):
     sur_name = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(200), nullable=False, unique=True)
     password = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.String(1000), default="Brak opisu.")
     birth_date = db.Column(db.Date, nullable=False)
+    description = db.Column(db.String(1000), default="Brak opisu.")
+    located_at = db.Column(db.Integer, db.ForeignKey('location.id'))
+    photo = db.Column(db.String(500), nullable=True)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
     modified_by = db.Column(db.Integer, db.ForeignKey('user.id'))
     create_date = db.Column('create_date', db.DateTime,
@@ -106,6 +108,8 @@ class User(db.Model, UserMixin):
         'Role', secondary=Model_Has_Role, backref='asignees')
     permissions = db.relationship(
         'Permission', secondary=Model_Has_Permission, backref='asignees')
+    notes = db.relationship('Note', backref="user")
+    appointments = db.relationship('Appointment', backref='therapist')
 
     def __repr__(self):
         return f"User({self.id},{self.name},{self.sur_name},{self.email})"
@@ -154,3 +158,59 @@ class User(db.Model, UserMixin):
             if permission not in permissions:
                 permissions.append(str(permission))
         return permissions
+
+
+class Note(db.Model):
+    __tablename__ = 'note'
+
+    id = db.Column(db.Integer,
+                   autoincrement='auto', primary_key=True)
+    content = db.Column(db.String(2000), nullable=False)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    modified_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    create_date = db.Column('create_date', db.DateTime,
+                            default=datetime.now)
+    last_update = db.Column('last_update', db.DateTime, default=datetime.now,
+                            onupdate=datetime.now)
+    
+
+class Location(db.Model):
+    __tablename__ = 'location'
+
+    id = db.Column(db.Integer,
+                   autoincrement='auto', primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    city = db.Column(db.String(30), nullable=False)
+    zip_code = db.Column(db.String(10), nullable=False)
+    address = db.Column(db.String(100), nullable=False)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    modified_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    create_date = db.Column('create_date', db.DateTime,
+                            default=datetime.now)
+    last_update = db.Column('last_update', db.DateTime, default=datetime.now,
+                            onupdate=datetime.now)
+    users = db.relationship('User', backref='location')
+    appointments = db.relationship('Appointment', backref='location')
+    
+    
+
+class Appointment(db.Model):
+    __tablename__ = 'appointment'
+
+    id = db.Column(db.Integer,
+                   autoincrement='auto', primary_key=True)
+    client_firstname = db.Column(db.String(50), nullable=False)
+    client_lastname = db.Column(db.String(50), nullable=False)
+    client_email = db.Column(db.String(200), nullable=False)
+    client_phone_number = db.Column(db.Integer, nullable=False)
+    client_contact_form = db.Column(db.String(100), nullable=False)
+    therapist_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    appointment_date = db.Column('appointment_date', db.DateTime)
+    appointment_location = db.Column(db.Integer, db.ForeignKey('location.id'))
+    status = db.Column(db.String(50), nullable=False)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    modified_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    create_date = db.Column('create_date', db.DateTime,
+                            default=datetime.now)
+    last_update = db.Column('last_update', db.DateTime, default=datetime.now,
+                            onupdate=datetime.now)
