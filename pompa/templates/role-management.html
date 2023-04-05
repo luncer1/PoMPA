@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+
 {% block flashes %}
 {% with messages = get_flashed_messages(with_categories = true) %}
 {% if messages %}
@@ -15,8 +16,8 @@
 {% endblock menu %}
 
 {% block main %}
-<main id="main" class="main">
 
+<main id="main" class="main">
     <div class="pagetitle">
         <h1>Zarządzanie Rolami</h1>
         <nav>
@@ -155,6 +156,7 @@
         }
     });
     $('.edit-user-role').click(function () {
+        $('#loading').css('display', 'block');
         $.ajax({
             type: "POST",
             url: "{{ url_for('api_role_management_user_edit_role') }}",
@@ -163,6 +165,7 @@
                 'user_id': $(this).data('user-id')
             },
             success: function (data) {
+                $('#loading').css('display', 'none');
                 data = JSON.parse(data)
                 $('.save-role-user').data('current-user', data['user_id'])
                 $('#role-users').modal('show');
@@ -180,6 +183,7 @@
         })
     })
     $('.save-role-user').click(function () {
+        $('#loading').css('display', 'block');
         let selected_roles = []
         $('#role-users .btn-success').each(function () {
             selected_roles.push($(this).text())
@@ -198,14 +202,15 @@
                 let all_roles = [];
                 data['user_roles'].forEach(function (currentValue, index, arr) {
                     all_roles.push(' ' + currentValue)
-
                 })
                 $('#user' + data['user_id'] + ' .user-roles').text(all_roles)
+                $('#loading').css('display', 'none');
             }
         })
     })
     $('#add-role-btn').click(function () {
         $('.add-role_invalid').css('display', 'none');
+        $('#loading').css('display', 'block');
         let role =
             $.ajax({
                 type: "POST",
@@ -224,12 +229,14 @@
                         $('#add-role-btn').replaceWith(`<button type="button" id="add-role-btn-confirm" class="btn btn-success">${data['message']}</button>`)
 
                     }
+                    $('#loading').css('display', 'none');
                 }
             })
 
 
     })
     $(document).on('click', '#add-role-btn-confirm', function () {
+        $('#loading').css('display', 'block');
         $.ajax({
             type: "POST",
             url: "{{ url_for('api_role_management_add_confirm') }}",
@@ -238,6 +245,7 @@
             },
             success: function (data) {
                 location.reload()
+                $('#loading').css('display', 'none');
             }
         })
 

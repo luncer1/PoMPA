@@ -295,6 +295,7 @@
 <script>
     $('#change-password-form').on('click', function (e) {
         e.preventDefault();
+        $('#loading').css('display', 'block');
         $.ajax({
             type: "POST",
             url: "{{ url_for('profile', id = user.id) }}",
@@ -316,6 +317,7 @@
                 else if (data.response == 'success') {
                     window.location = data.redirect;
                 }
+                $('#loading').css('display', 'none');
             }
         });
 
