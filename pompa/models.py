@@ -190,11 +190,11 @@ class User(db.Model, UserMixin):
         permissions = []
         for role in self.roles:
             for permission in role.permissions:
-                if permission not in permissions:
-                    permissions.append(str(permission))
+                if permission.name not in permissions:
+                    permissions.append(permission.name)
         for permission in self.permissions:
-            if permission not in permissions:
-                permissions.append(str(permission))
+            if permission.name not in permissions:
+                permissions.append(permission.name)
         return permissions
 
 
