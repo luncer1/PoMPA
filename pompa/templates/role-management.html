@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+
 {% block flashes %}
 {% with messages = get_flashed_messages(with_categories = true) %}
 {% if messages %}
@@ -15,8 +16,8 @@
 {% endblock menu %}
 
 {% block main %}
-<main id="main" class="main">
 
+<main id="main" class="main">
     <div class="pagetitle">
         <h1>Zarządzanie Rolami</h1>
         <nav>
@@ -56,8 +57,68 @@
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title">Edytuj Role</h5>
-                        <p>This is an examle page with no contrnt. You can use it as a starter for your custom pages.
-                        </p>
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Rola</th>
+                                    <th scope="col">Aktywna?</th>
+                                    <th scope="col">Edytuj</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <div class="modal fade" id="role-edit" tabindex="-1">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                    aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="row mb-3">
+                                                    <label for="inputText" class="col-sm-3 col-form-label">Zmień
+                                                        nazwę</label>
+                                                    <div class="col-sm-6">
+                                                        <input type="text" id="role-name-edit" class="form-control">
+                                                        <div class="change-role_invalid invalid-feedback">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="form-check form-switch"><input class="form-check-input"
+                                                        type="checkbox" id="is-role-active-switch"><label
+                                                        class="form-check-label"
+                                                        for="is-role-active-switch">Aktywna</label>
+                                                    <div class="switch-role_invalid invalid-feedback">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary"
+                                                    data-bs-dismiss="modal">Zamknij</button>
+                                                <button type="button" data-current-role=""
+                                                    class="btn btn-primary save-role">Zapisz</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% for single_role in all_roles %}
+
+                                <tr id="role{{single_role.id}}">
+                                    <th scope="row">{{ single_role.id }}</th>
+                                    <td>{{ single_role.name }}</td>
+                                    <td>{% if single_role.is_active == True %} Tak {%else%} Nie
+                                        {%endif%}</td>
+                                    <td><button type="button" class="btn btn-primary btn-sm edit-role"
+                                            data-role-id="{{ single_role.id }}" {%if single_role.name=="Admin" %}
+                                            disabled {%endif%}>
+                                            <i class="bi bi-pencil-square"></i>
+                                        </button></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -132,8 +193,52 @@
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title">Role - Prawa</h5>
-                        <p>This is an examle page with no contrnt. You can use it as a starter for your custom pages.
-                        </p>
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col" style="text-align:center">Rola</th>
+                                    <th scope="col" style="text-align:center">Edytuj Prawa</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <div class="modal fade" id="role-edit-permissions" tabindex="-1">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                    aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary"
+                                                    data-bs-dismiss="modal">Zamknij</button>
+                                                <button type="button" data-current-role=""
+                                                    class="btn btn-primary save-role-permissions">Zapisz</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% for single_role in all_roles %}
+                                {%if single_role.is_active == True%}
+                                <tr id="role{{single_role.id}}">
+                                    <th scope="row">{{ single_role.id }}</th>
+                                    <td style="text-align:center">{{ single_role.name }}</td>
+                                    <td style="text-align:center"><button type="button"
+                                            class="btn btn-primary btn-sm edit-role-permissions"
+                                            data-role-id="{{ single_role.id }}" {%if single_role.name=="Admin" %}
+                                            disabled {%endif%}>
+                                            <i class="bi bi-pencil-square"></i>
+                                        </button></td>
+                                </tr>
+                                {%endif%}
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -155,14 +260,15 @@
         }
     });
     $('.edit-user-role').click(function () {
+        $('#loading').css('display', 'block');
         $.ajax({
             type: "POST",
             url: "{{ url_for('api_role_management_user_edit_role') }}",
             data: {
-                'current_operation': 'edit-role',
                 'user_id': $(this).data('user-id')
             },
             success: function (data) {
+                $('#loading').css('display', 'none');
                 data = JSON.parse(data)
                 $('.save-role-user').data('current-user', data['user_id'])
                 $('#role-users').modal('show');
@@ -176,10 +282,14 @@
                         }
                     }))
                 })
+            },
+            error: function (data) {
+                $('#loading').css('display', 'none');
             }
         })
     })
     $('.save-role-user').click(function () {
+        $('#loading').css('display', 'block');
         let selected_roles = []
         $('#role-users .btn-success').each(function () {
             selected_roles.push($(this).text())
@@ -189,7 +299,6 @@
             url: "{{ url_for('api_role_management_user_save_role') }}",
             traditional: true,
             data: {
-                'current_operation': 'save-role',
                 'user_id': $(this).data('current-user'),
                 'roles': [selected_roles]
             },
@@ -198,14 +307,18 @@
                 let all_roles = [];
                 data['user_roles'].forEach(function (currentValue, index, arr) {
                     all_roles.push(' ' + currentValue)
-
                 })
                 $('#user' + data['user_id'] + ' .user-roles').text(all_roles)
+                $('#loading').css('display', 'none');
+            },
+            error: function (data) {
+                $('#loading').css('display', 'none');
             }
         })
     })
     $('#add-role-btn').click(function () {
         $('.add-role_invalid').css('display', 'none');
+        $('#loading').css('display', 'block');
         let role =
             $.ajax({
                 type: "POST",
@@ -224,12 +337,17 @@
                         $('#add-role-btn').replaceWith(`<button type="button" id="add-role-btn-confirm" class="btn btn-success">${data['message']}</button>`)
 
                     }
+                    $('#loading').css('display', 'none');
+                },
+                error: function (data) {
+                    $('#loading').css('display', 'none');
                 }
             })
 
 
     })
     $(document).on('click', '#add-role-btn-confirm', function () {
+        $('#loading').css('display', 'block');
         $.ajax({
             type: "POST",
             url: "{{ url_for('api_role_management_add_confirm') }}",
@@ -238,9 +356,126 @@
             },
             success: function (data) {
                 location.reload()
+                $('#loading').css('display', 'none');
+            },
+            error: function (data) {
+                $('#loading').css('display', 'none');
             }
         })
 
+    })
+    $('.edit-role').click(function () {
+        $('#loading').css('display', 'block');
+        $.ajax({
+            type: "POST",
+            url: "{{ url_for('api_role_management_edit_role') }}",
+            data: {
+                'role_id': $(this).data('role-id')
+            },
+            success: function (data) {
+                $('#is-role-active-switch').prop('checked', false)
+                $('#loading').css('display', 'none');
+                data = JSON.parse(data)
+                $('.save-role').data('current-role', data['role_id'])
+                $('#role-edit').modal('show');
+                $('#role-edit .modal-title').text(data['role']);
+                $('#role-name-edit').val(data['role']);
+                if (data['is_active'] == true) {
+                    $('#is-role-active-switch').prop('checked', true)
+                }
+            },
+            error: function (data) {
+                $('#loading').css('display', 'none');
+                location.reload();
+            }
+        })
+    })
+    $('.save-role').click(function () {
+        $('#loading').css('display', 'block');
+        $('.switch-role_invalid').css('display', 'none')
+        $('.change-role_invalid').css('display', 'none')
+        $.ajax({
+            type: "POST",
+            url: "{{ url_for('api_role_management_save_role') }}",
+            traditional: true,
+            data: {
+                'role_id': $(this).data('current-role'),
+                'is_active': $('#is-role-active-switch').is(':checked'),
+                'role': $('#role-name-edit').val()
+            },
+            success: function (data) {
+                $('#loading').css('display', 'none');
+                data = JSON.parse(data);
+                $('#role-edit').modal('hide');
+                location.reload();
+            },
+            error: function (data) {
+                $('#loading').css('display', 'none');
+                data = JSON.parse(data.responseText);
+                if (data['error_for'] == 'switch') {
+                    $('.switch-role_invalid').css('display', 'block');
+                    $('.switch-role_invalid').text(data['message']);
+                }
+                else if (data['error_for'] == 'change') {
+                    $('.change-role_invalid').css('display', 'block');
+                    $('.change-role_invalid').text(data['message']);
+                }
+            }
+        })
+    })
+    $('.edit-role-permissions').click(function () {
+        $('#loading').css('display', 'block');
+        $.ajax({
+            type: "POST",
+            url: "{{ url_for('api_role_management_edit_role_permissions') }}",
+            data: {
+                'role_id': $(this).data('role-id')
+            },
+            success: function (data) {
+                $('#loading').css('display', 'none');
+                data = JSON.parse(data);
+                $('.save-role-permissions').data('current-role', data['role_id'])
+                $('#role-edit-permissions').modal('show');
+                $('#role-edit-permissions .modal-title').text(data['role']);
+                $('#role-edit-permissions .modal-body').text('');
+                data['all_permissions'].forEach(function (currentValue, index, arr) {
+                    $('#role-edit-permissions .modal-body').append($(`<button type="button" style="margin-right:5px" class="btn ${jQuery.inArray(currentValue, data['role_permissions']) == -1 ? 'btn-danger' : 'btn-success'} rounded-pill">${currentValue}</button>`).on('click', function () {
+                        $(this).toggleClass('btn-success');
+                        $(this).toggleClass('btn-danger');
+
+                    }))
+                })
+            },
+            error: function (data) {
+                $('#loading').css('display', 'none');
+                location.reload();
+            }
+        })
+    })
+    $('.save-role-permissions').click(function () {
+        $('#loading').css('display', 'block');
+        let selected_permissions = []
+        $('#role-edit-permissions .btn-success').each(function () {
+            selected_permissions.push($(this).text())
+        })
+        $.ajax({
+            type: "POST",
+            url: "{{ url_for('api_role_management_save_role_permissions') }}",
+            traditional: true,
+            data: {
+                'role_id': $(this).data('current-role'),
+                'permissions': [selected_permissions]
+            },
+            success: function (data) {
+                $('#loading').css('display', 'none');
+                data = JSON.parse(data);
+                $('#role-edit-permissions').modal('hide');
+                location.reload();
+            },
+            error: function (data) {
+                $('#loading').css('display', 'none');
+            }
+        })
     })
 
 </script>

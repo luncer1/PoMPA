@@ -21,14 +21,14 @@ def login_only_for_guest(f):
     return wrap
 
 
-def check_permission(required_permissions):
+def check_permission(required_permissions):  # ALWAYS PASS LIST AS ARGUMENT
     def decorator(fun):
         @wraps(fun)
         def wrapper(*args, **kwargs):
             if all(permission in current_user.get_all_permissions() for permission in required_permissions):
                 return fun(*args, **kwargs)
             else:
-                flash('Brak uprawnien!', 'error')
+                flash('Brak uprawnień!', 'error')
                 return redirect(url_for('dashboard'))
         return wrapper
     return decorator
@@ -86,7 +86,7 @@ def logout():
 
 
 @app.route('/profile/<id>', methods=['GET', 'POST'])
-@login_required
+@check_permission(['Dodawanie'])
 def profile(id):
     user = User.query.filter_by(id=id).first()
     # Change password
@@ -119,8 +119,11 @@ def profile(id):
 @login_required
 def role_management():
     all_users = User.query.all()
-    all_roles = Role.query.filter_by(is_active=1).all()
+    all_roles = Role.query.all()
+
     return render_template('role-management.html', user=current_user, all_users=all_users, all_roles=all_roles)
+
+# ROLE MANAGEMENT API
 
 
 @app.route('/role-management/user/save-role', methods=['POST'])
@@ -187,3 +190,96 @@ def api_role_management_add_confirm():
             new_role.submit_changes(current_user.id)
             flash('Rola dodana', 'success')
             return json.dumps({'result': 'success', 'message': 'Potwierdź'})
+
+
+@app.route('/role-management/edit-role', methods=['POST'])
+def api_role_management_edit_role():
+    if request.method == 'POST':
+        selected_role = Role.query.filter_by(
+            id=request.form.get('role_id')).first()
+        if selected_role.name == "Admin":
+            flash('Nie możesz edytować admina', 'error')
+            return '', 400
+        return json.dumps({'role': selected_role.name,
+                           'is_active': selected_role.is_active,
+                           'role_id': selected_role.id
+                           })
+
+
+@app.route('/role-management/save-role', methods=['POST'])
+def api_role_management_save_role():
+    if request.method == 'POST':
+        return_json = {}
+        selected_role = Role.query.filter_by(
+            id=request.form.get('role_id')).first()
+        if request.form.get('is_active') == 'false':
+            if len(selected_role.asignees) != 0:
+                return json.dumps({
+                    'message': "Nie można wyłączyć roli, do której są przypisani użytkownicy", 'error_for': 'switch'}), 400
+            else:
+                selected_role.is_active = 0
+                db.session.commit()
+                selected_role.submit_changes(current_user.id)
+                return_json['role_id'] = request.form.get('role_id')
+                return_json['value'] = '0'
+                return_json['role'] = selected_role.name
+        if request.form.get('is_active') == 'true' and selected_role.is_active == 0:
+            selected_role.is_active = 1
+            db.session.commit()
+            selected_role.submit_changes(current_user.id)
+            return_json['role_id'] = request.form.get('role_id')
+            return_json['value'] = '1'
+            return_json['role'] = selected_role.name
+        if request.form.get('role') != selected_role.name:
+            for role in Role.query.all():
+                if role.name == request.form.get('role'):
+                    return json.dumps({
+                        'message': "Nazwa roli musi być unikalna", 'error_for': 'change'}), 400
+            selected_role.name = request.form.get('role')
+            db.session.commit()
+            selected_role.submit_changes(current_user.id)
+            return_json['role_id'] = request.form.get('role_id')
+            return_json['value'] = selected_role.is_active
+            return_json['role'] = selected_role.name
+        return json.dumps(return_json), 200
+
+
+@app.route('/role-management/edit-role-permissions', methods=['POST'])
+def api_role_management_edit_role_permissions():
+    all_permissions = Permission.query.all()
+    if request.method == 'POST':
+        selected_role = Role.query.filter_by(
+            id=request.form.get('role_id')).first()
+        if selected_role.name == "Admin":
+            flash('Nie możesz edytować admina', 'error')
+            return '', 400
+        return json.dumps({'role': selected_role.name,
+                           'all_permissions': [permission.name for permission in all_permissions],
+                           'role_permissions': [permission.name for permission in selected_role.permissions],
+                           'role_id': selected_role.id
+                           })
+
+
+@app.route('/role-management/save-role-permissions', methods=['POST'])
+def api_role_management_save_role_permissions():
+    if request.method == 'POST':
+        selected_role = Role.query.filter_by(
+            id=request.form.get('role_id')).first()
+        if request.form.get('permissions') == "":
+            selected_permissions = ""
+        else:
+            selected_permissions = request.form.get('permissions').split(',')
+
+        for permission in selected_permissions:
+            permission_object = Permission.query.filter_by(
+                name=permission).first()
+            if permission_object not in selected_role.permissions:
+                selected_role.add_permission(permission_object)
+        selected_role.submit_changes(current_user.id)
+        for permission in selected_role.permissions[:]:
+            if permission.name not in selected_permissions:
+                selected_role.remove_permission(permission)
+                selected_role.submit_changes(current_user.id)
+        flash('Prawa zapisane', 'success')
+        return json.dumps({'role': 'asd'
+                           }), 200

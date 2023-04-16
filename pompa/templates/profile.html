@@ -75,10 +75,7 @@
 
                             <div class="tab-pane fade show active profile-overview" id="profile-overview">
                                 <h5 class="card-title">Opis</h5>
-                                <p class="small fst-italic">Sunt est soluta temporibus accusantium neque nam maiores
-                                    cumque temporibus. Tempora libero non est unde veniam est qui dolor. Ut sunt iure
-                                    rerum quae quisquam autem eveniet perspiciatis odit. Fuga sequi sed ea saepe at
-                                    unde.</p>
+                                <p class="small fst-italic">{{viewed_user.description}}</p>
 
                                 <h5 class="card-title">Szczegóły profilu</h5>
 
@@ -295,6 +292,7 @@
 <script>
     $('#change-password-form').on('click', function (e) {
         e.preventDefault();
+        $('#loading').css('display', 'block');
         $.ajax({
             type: "POST",
             url: "{{ url_for('profile', id = user.id) }}",
@@ -316,6 +314,7 @@
                 else if (data.response == 'success') {
                     window.location = data.redirect;
                 }
+                $('#loading').css('display', 'none');
             }
         });
 

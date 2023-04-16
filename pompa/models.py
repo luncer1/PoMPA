@@ -85,6 +85,42 @@ class Role(db.Model):
             return 0
 
 
+class Note(db.Model):
+    __tablename__ = 'note'
+
+    id = db.Column(db.Integer,
+                   autoincrement='auto', primary_key=True)
+    content = db.Column(db.String(2000), nullable=False)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    modified_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    create_date = db.Column('create_date', db.DateTime,
+                            default=datetime.now)
+    last_update = db.Column('last_update', db.DateTime, default=datetime.now,
+                            onupdate=datetime.now)
+
+
+class Appointment(db.Model):
+    __tablename__ = 'appointment'
+
+    id = db.Column(db.Integer,
+                   autoincrement='auto', primary_key=True)
+    client_firstname = db.Column(db.String(50), nullable=False)
+    client_lastname = db.Column(db.String(50), nullable=False)
+    client_email = db.Column(db.String(200), nullable=False)
+    client_phone_number = db.Column(db.Integer, nullable=False)
+    client_contact_form = db.Column(db.String(100), nullable=False)
+    therapist_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    appointment_date = db.Column('appointment_date', db.DateTime)
+    appointment_location = db.Column(db.Integer, db.ForeignKey('location.id'))
+    status = db.Column(db.String(50), nullable=False)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    modified_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    create_date = db.Column('create_date', db.DateTime,
+                            default=datetime.now)
+    last_update = db.Column('last_update', db.DateTime, default=datetime.now,
+                            onupdate=datetime.now)
+
+
 class User(db.Model, UserMixin):
     __tablename__ = 'user'
 
@@ -108,8 +144,10 @@ class User(db.Model, UserMixin):
         'Role', secondary=Model_Has_Role, backref='asignees')
     permissions = db.relationship(
         'Permission', secondary=Model_Has_Permission, backref='asignees')
-    notes = db.relationship('Note', backref="user")
-    appointments = db.relationship('Appointment', backref='therapist')
+    notes = db.relationship('Note', backref="user",
+                            foreign_keys=[Note.created_by])
+    appointments = db.relationship(
+        'Appointment', backref='therapist', foreign_keys=[Appointment.therapist_id])
 
     def __repr__(self):
         return f"User({self.id},{self.name},{self.sur_name},{self.email})"
@@ -152,27 +190,13 @@ class User(db.Model, UserMixin):
         permissions = []
         for role in self.roles:
             for permission in role.permissions:
-                if permission not in permissions:
-                    permissions.append(str(permission))
+                if permission.name not in permissions:
+                    permissions.append(permission.name)
         for permission in self.permissions:
-            if permission not in permissions:
-                permissions.append(str(permission))
+            if permission.name not in permissions:
+                permissions.append(permission.name)
         return permissions
 
-
-class Note(db.Model):
-    __tablename__ = 'note'
-
-    id = db.Column(db.Integer,
-                   autoincrement='auto', primary_key=True)
-    content = db.Column(db.String(2000), nullable=False)
-    created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
-    modified_by = db.Column(db.Integer, db.ForeignKey('user.id'))
-    create_date = db.Column('create_date', db.DateTime,
-                            default=datetime.now)
-    last_update = db.Column('last_update', db.DateTime, default=datetime.now,
-                            onupdate=datetime.now)
-    
 
 class Location(db.Model):
     __tablename__ = 'location'
@@ -189,28 +213,6 @@ class Location(db.Model):
                             default=datetime.now)
     last_update = db.Column('last_update', db.DateTime, default=datetime.now,
                             onupdate=datetime.now)
-    users = db.relationship('User', backref='location')
+    users = db.relationship('User', backref='location',
+                            foreign_keys=[User.located_at])
     appointments = db.relationship('Appointment', backref='location')
-    
-    
-
-class Appointment(db.Model):
-    __tablename__ = 'appointment'
-
-    id = db.Column(db.Integer,
-                   autoincrement='auto', primary_key=True)
-    client_firstname = db.Column(db.String(50), nullable=False)
-    client_lastname = db.Column(db.String(50), nullable=False)
-    client_email = db.Column(db.String(200), nullable=False)
-    client_phone_number = db.Column(db.Integer, nullable=False)
-    client_contact_form = db.Column(db.String(100), nullable=False)
-    therapist_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    appointment_date = db.Column('appointment_date', db.DateTime)
-    appointment_location = db.Column(db.Integer, db.ForeignKey('location.id'))
-    status = db.Column(db.String(50), nullable=False)
-    created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
-    modified_by = db.Column(db.Integer, db.ForeignKey('user.id'))
-    create_date = db.Column('create_date', db.DateTime,
-                            default=datetime.now)
-    last_update = db.Column('last_update', db.DateTime, default=datetime.now,
-                            onupdate=datetime.now)
