@@ -123,6 +123,8 @@ def role_management():
 
     return render_template('role-management.html', user=current_user, all_users=all_users, all_roles=all_roles)
 
+# ROLE MANAGEMENT API
+
 
 @app.route('/role-management/user/save-role', methods=['POST'])
 def api_role_management_user_save_role():
