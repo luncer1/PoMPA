@@ -4,11 +4,13 @@ from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, AnonymousUserMixin
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://sql7613139:XzYtutaCHL@sql7.freesqldatabase.com:3306/sql7613139'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://ba4848ee1380b9:f1a6ce53@us-cdbr-east-06.cleardb.net/heroku_52e6f063e1d4265'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'sd$sdf45dR565er6DF65drtw43dft65uy8uji6576547'
 app.config['SESSION_TYPE'] = 'memcache'
 app.config['PERMANENT_SESSION_LIFETIME'] = 1800
+app.config['SQLALCHEMY_POOL_RECYCLE'] = 299
+app.config['SQLALCHEMY_POOL_TIMEOUT'] = 20
 db = SQLAlchemy(app)
 bcrpyt = Bcrypt(app)
 

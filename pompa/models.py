@@ -107,7 +107,7 @@ class Appointment(db.Model):
     client_firstname = db.Column(db.String(50), nullable=False)
     client_lastname = db.Column(db.String(50), nullable=False)
     client_email = db.Column(db.String(200), nullable=False)
-    client_phone_number = db.Column(db.Integer, nullable=False)
+    client_phone_number = db.Column(db.Integer, nullable=False) #TODO: change as String(30)
     client_contact_form = db.Column(db.String(100), nullable=False)
     therapist_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     appointment_date = db.Column('appointment_date', db.DateTime)
@@ -119,7 +119,15 @@ class Appointment(db.Model):
                             default=datetime.now)
     last_update = db.Column('last_update', db.DateTime, default=datetime.now,
                             onupdate=datetime.now)
-
+    
+    def __repr__(self):
+        return f"Appointment({self.id},{self.client_firstname},{self.client_lastname},{self.therapist})"
+    
+    def submit_changes(self, user_id):
+        if self.created_by == None:
+            self.created_by = user_id
+        self.modified_by = user_id
+        db.session.commit()
 
 class User(db.Model, UserMixin):
     __tablename__ = 'user'
@@ -196,6 +204,13 @@ class User(db.Model, UserMixin):
             if permission.name not in permissions:
                 permissions.append(permission.name)
         return permissions
+    
+    def has_permission(self, permission_name: str):
+        permission = Permission.query.filter_by(name=permission_name).first()
+        if permission.name in self.get_all_permissions():
+            return True
+        else:
+            return False
 
 
 class Location(db.Model):
