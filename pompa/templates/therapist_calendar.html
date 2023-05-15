@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block flashes %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% include "flash.html" %}
+{% endif %}
+{% endwith %}
+{% endblock %}
+{% block header %}
+{% include 'top-navbar.html' %}
+{% endblock header %}
+
+{% block menu %}
+{% include 'menu.html' %}
+{% endblock menu %}
+
+{% block main %}
+<main id="main" class="main">
+    {% include 'calendar.html'%}
+</main>
+{% endblock main %}
+
+{% block footer %}
+<script src="https://cdn.tailwindcss.com"></script>
+{% include 'footer.html' %}
+{% endblock footer %}

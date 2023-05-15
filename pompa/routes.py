@@ -1,12 +1,13 @@
 from functools import wraps
-from flask import render_template, request, redirect, url_for, flash
+from flask import render_template, request, redirect, url_for, flash, jsonify
 from pompa import app, db
 from pompa.forms import LoginForm, RegisterForm
 from pompa import bcrpyt
-from pompa.models import User, Permission, Role
+from pompa.models import User, Permission, Role,Appointment
 from flask_login import login_required, login_user, logout_user, current_user
 import json
 import time
+import datetime
 
 create_database = False
 
@@ -45,8 +46,14 @@ def dashboard():
 @login_only_for_guest
 def login():
     if create_database == True:
-        db.create_all()
-        db.session.commit()
+        pass
+        # db.create_all()
+        # db.session.commit()
+        # db.session.add(Permission(name="Dodawanie",
+        #                created_by=4, modified_by=4))
+        # db.session.add(Permission(name="Usuwanie",
+        #                created_by=4, modified_by=4))
+        # db.session.commit()
     form = LoginForm()
     if request.method == 'POST':
         if form.is_submitted():
@@ -283,3 +290,95 @@ def api_role_management_save_role_permissions():
         flash('Prawa zapisane', 'success')
         return json.dumps({'role': 'asd'
                            }), 200
+
+# THERAPISTS
+
+
+@app.route('/therapists', methods=['GET', 'POST'])
+@check_permission(['Dodawanie'])
+def therapists():
+    therapist = Role.query.filter_by(name="Terapeuta").first()
+    therapists = []
+    for user in User.query.all():
+        if therapist in user.roles:
+            therapists.append(user)
+    return render_template('therapist_list.html', user=current_user, therapists=therapists)
+
+
+@app.route('/calendar/<id>', methods=['GET', 'POST'])
+@check_permission(['Dodawanie'])
+def therapist_calendar(id):
+    user = User.query.filter_by(id=id).first()
+    appointments = []
+    read_only = True
+    if (current_user == user) or current_user.has_permission("Usuwanie"): #TODO: Dodać odpowiednie uprawnienie
+        read_only = False
+        for appointment in user.appointments:
+            appointments.append({"event_date": f"{appointment.appointment_date.date()}",
+                                 "event_id": f"{appointment.id}",
+                                "event_time": f"{appointment.appointment_date.time()}",
+                                "event_name": f"{appointment.client_firstname}",
+                                "event_surname": f"{appointment.client_lastname}",
+                                "event_email": f"{appointment.client_email}",
+                                "event_phone": f"{appointment.client_phone_number}",
+                                "event_contact_way": f"{appointment.client_contact_form}",
+                                "event_status": f"{appointment.status}",})
+            
+    else:
+        for appointment in user.appointments:
+            if appointment.client_firstname == "Wolny Termin":
+                appointments.append({"event_date": f"{appointment.appointment_date.date()}",
+                                     "event_id": f"{appointment.id}",
+                                    "event_time": f"{appointment.appointment_date.time()}",
+                                    "event_name": f"{appointment.client_firstname}",
+                                    "event_surname": f"{appointment.client_lastname}"})
+    return render_template('therapist_calendar.html', user=current_user, viewed_user=user, appointments=appointments, read_only=read_only)
+
+@app.route('/calendar/<id>/addevent', methods=['GET', 'POST'])
+@check_permission(['Dodawanie'])
+def calendar_api_add_event(id):
+    user = User.query.filter_by(id=id).first()
+    if request.method == 'POST':
+        if (current_user == user) or current_user.has_permission("Usuwanie"): #TODO: Dodać odpowiednie uprawnienie
+            cyclic = 1
+            if request.form.get('event_cyclic') == "true":
+                cyclic = 4
+            cyclic_appointments = []
+            for i in range(0,cyclic):
+                new_appointment = Appointment(client_firstname=request.form.get('event_name'), client_lastname=request.form.get('event_surname'), client_email=request.form.get('event_email'),
+                                    client_phone_number=request.form.get('event_phone'), client_contact_form=request.form.get('event_contact_way'), therapist_id=id,
+                                    appointment_date=f"{request.form.get('event_date')} {request.form.get('event_time')}", appointment_location=request.form.get('event_location'),status=request.form.get('event_status'))
+                new_appointment.appointment_date = str(datetime.datetime.strptime(new_appointment.appointment_date, '%Y-%m-%d %H:%M') + datetime.timedelta(days=(i*7)))
+                if Appointment.query.filter_by(appointment_date=new_appointment.appointment_date, therapist_id=id).first() != None:
+                    return json.dumps({'message': 'Juz masz spotkanie w tym terminie'}),400
+                elif request.form.get('event_name') == "Wolny Termin" and datetime.datetime.strptime(request.form.get('event_date'),'%Y-%m-%d').date() < datetime.datetime.now().date():
+                    return json.dumps({'message': 'Nie możesz dodać wolnego terminu w tym dniu'}),400 
+                else:
+                    cyclic_appointments.append(new_appointment)
+            for item in cyclic_appointments:
+                db.session.add(item)
+                db.session.commit()
+                item.submit_changes(current_user.id)
+            return json.dumps({'message': 'Dodano termin', 'events_added': len(cyclic_appointments), 'event_id': [item.id for item in cyclic_appointments]}),200
+        else:
+            return json.dumps({'message': 'Nie możesz edytować tego kalendarza'}),400
+        
+        
+@app.route('/calendar/<id>/editevent', methods=['GET', 'POST'])
+@check_permission(['Dodawanie'])
+def calendar_api_edit_event(id):
+    user = User.query.filter_by(id=id).first()
+    if request.method == 'POST':
+        if (current_user == user) or current_user.has_permission("Usuwanie"): #TODO: Dodać odpowiednie uprawnienie
+            appointment = Appointment.query.filter_by(id=request.form.get('event_id')).first()
+            appointment.client_firstname = request.form.get('event_name')
+            appointment.client_lastname = request.form.get('event_surname')
+            appointment.client_email = request.form.get('event_email')
+            appointment.client_phone_number = request.form.get('event_phone')
+            appointment.client_contact_form = request.form.get('event_contact_way')
+            appointment.appointment_date = f"{request.form.get('event_date')} {request.form.get('event_time')}"
+            if Appointment.query.filter_by(appointment_date=appointment.appointment_date, therapist_id=id).first() != None:
+                    return json.dumps({'message': 'Juz masz spotkanie w tym terminie'}),400
+            appointment.status = request.form.get('event_status')
+            appointment.submit_changes(current_user.id)
+            return json.dumps({'message': 'Nie możesz edytować tego kalendarza'}),400
