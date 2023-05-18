@@ -70,7 +70,7 @@
                                     x-for="event in events.filter(e => new Date(e.event_date).toDateString() ===  new Date(year, month, date).toDateString() )">
                                     <div
                                         class="px-2 py-1 rounded-lg mt-1 overflow-hidden border cursor-pointer border-blue-200 text-blue-800 bg-blue-100" @click="showEventModal(date, 'Edit', event)">
-                                        <p x-text="event.event_id+' '+event.event_name+' '+event.event_time"
+                                        <p x-text="event.event_name+' '+event.event_time"
                                             class="text-sm truncate leading-tight"></p>
                                     </div>
                                 </template>
@@ -107,7 +107,7 @@
                     </div>
                 </div>
 
-                <div class="mb-4">
+                <div class="mb-4" id="cylic_checkbox">
                     <label class="text-gray-800 block mb-1 font-bold text-sm tracking-wide">Cykliczne (4 kolejne tygodnie)</label>
                     <div class="form-check form-switch">
                         <input
@@ -120,7 +120,7 @@
                     <label class="text-gray-800 block mb-1 font-bold text-sm tracking-wide">Imię</label>
                     <input
                         class="bg-gray-200 appearance-none border-2 border-gray-200 rounded-lg w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500"
-                        type="text" x-model="event_name">
+                        type="text" id="event_name" x-model="event_name">
                 </div>
 
                 <div class="mb-4">
@@ -132,7 +132,7 @@
 
                 <div class="mb-4">
                     <label class="text-gray-800 block mb-1 font-bold text-sm tracking-wide">Forma Kontaktu</label>
-                    <select class="form-select" id="contact-select">
+                    <select class="form-select" x-model="event_contact_way" id="contact-select">
                         <option value="Telefon" selected>Telefon</option>
                         <option value="E-mail">E-Mail</option>
                     </select>
@@ -154,7 +154,7 @@
 
                 <div class="mb-4">
                     <label class="text-gray-800 block mb-1 font-bold text-sm tracking-wide">Status</label>
-                    <select class="form-select" id="status-select">
+                    <select class="form-select" x-model="event_status" id="status-select">
                         <option value="Do opłacenia" selected>Do opłacenia</option>
                         <option value="Opłacona">Opłacona</option>
                         <option value="Zrealizowana">Zrealizowana</option>
@@ -198,6 +198,11 @@
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
 <script>
 function sendToDatabase(event, calendar){
+    Date.prototype.addDays = function(days) {
+    var date = new Date(this.valueOf());
+    date.setDate(date.getDate() + days);
+    return date;
+}
     $('#loading').css('display', 'block');
     $.ajax({
             type: "POST",
@@ -207,8 +212,24 @@ function sendToDatabase(event, calendar){
                 $('#loading').css('display', 'none');
                 console.log(data)
                 data = JSON.parse(data);
-                event.event_id = data['event_id'][0];
-                calendar.events.push(event);
+                for (let i=0;i<data['event_id'].length;i++){
+                     let new_event = {
+                                event_id: data['event_id'][i],
+                                event_date: new Date(event.event_date).addDays(i*7).toISOString().split('T')[0],
+                                event_time: event.event_time,
+                                event_name: event.event_name,
+                                event_surname: event.event_surname,
+                                event_email: event.event_email,
+                                event_phone: event.event_phone,
+                                event_contact_way: event.event_contact_way,
+                                event_status: event.event_status,
+                                event_cyclic: event.event_cylic,
+                                event_location: event.event_location,
+                            }
+                    calendar.events.push(new_event);
+                }
+               
+                
                 
                 
                 $('.alertbox').html(`<div style="z-index:9999"
@@ -239,10 +260,14 @@ function editInDatabase(event, calendar){
             data: event,
             success: function (data) {
                 $('#loading').css('display', 'none');
-                console.log(data)
                 data = JSON.parse(data);
-                //event.event_id = data['event_id'][0];
-                //calendar.events.push(event);
+                calendar.events.filter(v => v.event_id == event.event_id)[0].event_name = event.event_name;
+                calendar.events.filter(v => v.event_id == event.event_id)[0].event_surname = event.event_surname;
+                calendar.events.filter(v => v.event_id == event.event_id)[0].event_contact_way = event.event_contact_way;
+                calendar.events.filter(v => v.event_id == event.event_id)[0].event_phone = event.event_phone;
+                calendar.events.filter(v => v.event_id == event.event_id)[0].event_email = event.event_email;
+                calendar.events.filter(v => v.event_id == event.event_id)[0].event_status = event.event_status;
+                calendar.events.filter(v => v.event_id == event.event_id)[0].event_time = event.event_time;
                 
                 
                 $('.alertbox').html(`<div style="z-index:9999"
@@ -253,6 +278,8 @@ function editInDatabase(event, calendar){
                 $('#flash_success').delay(4000).slideUp(500);
             },
             error: function (xhr) {
+                    
+                   
                     xhr = JSON.parse(xhr['responseText'])
                     $('#loading').css('display', 'none');
                      $('.alertbox').html(`<div style="z-index:9999"
@@ -322,6 +349,30 @@ function editInDatabase(event, calendar){
         },
 
         showEventModal(date, operation, event="") {
+            $('#status-select').val(event.event_status);
+            $('#contact-select').val(event.event_contact_way);
+
+            if($('#contact-select').val() == 'E-mail'){
+                $('.phone-input').addClass('hidden');
+                $('.email-input').removeClass('hidden');
+            }
+            else{
+                $('.phone-input').removeClass('hidden');
+                $('.email-input').addClass('hidden');
+            }
+            if(event.event_id != undefined){
+                $('#cylic_checkbox').addClass('hidden')
+                $('#free-event').attr( "checked", false );
+            }
+            else{
+                 $('#cylic_checkbox').removeClass('hidden')
+            }
+            if($('#free-event').is(':checked')){
+                $('.not-free').addClass('hidden');
+            }
+            else{
+                $('.not-free').removeClass('hidden');
+            }
             // open the modal
             if(operation == "New"){
                 var today = new Date();
@@ -341,13 +392,14 @@ function editInDatabase(event, calendar){
                 this.event_contact_way = event.event_contact_way;
                 this.event_status = event.event_status;
                 this.event_id = event.event_id;
-
+                if(event.event_name == "Wolny Termin"){
+                    this.event_name = "";
+                }
             }
             
         },
 
         addEvent() {
-
              if($('#free-event').is(':checked')){
                 let new_event = {
                                 event_id: this.event_id,
@@ -367,6 +419,7 @@ function editInDatabase(event, calendar){
                     sendToDatabase(new_event, this);
                 }
                 else{
+
                     editInDatabase(new_event, this);
                 } 
                 
@@ -378,6 +431,7 @@ function editInDatabase(event, calendar){
                 //close the modal
                 this.openEventModal = false;
              }
+
              else{
                 let new_event = {
                                 event_id: this.event_id,
@@ -387,8 +441,8 @@ function editInDatabase(event, calendar){
                                 event_surname: this.event_surname,
                                 event_email: this.event_email,
                                 event_phone: this.event_phone,
-                                event_contact_way: this.event_contact_way,
-                                event_status: this.event_status,
+                                event_contact_way: $('#contact-select').val(),
+                                event_status: $('#status-select').val(),
                                 event_cyclic: this.event_cylic,
                                 event_location: {{viewed_user.located_at}}
                             }
