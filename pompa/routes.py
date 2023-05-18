@@ -316,7 +316,7 @@ def therapist_calendar(id):
         for appointment in user.appointments:
             appointments.append({"event_date": f"{appointment.appointment_date.date()}",
                                  "event_id": f"{appointment.id}",
-                                "event_time": f"{appointment.appointment_date.time()}",
+                                "event_time": f"{str(appointment.appointment_date.time())[:-3]}",
                                 "event_name": f"{appointment.client_firstname}",
                                 "event_surname": f"{appointment.client_lastname}",
                                 "event_email": f"{appointment.client_email}",
@@ -329,7 +329,7 @@ def therapist_calendar(id):
             if appointment.client_firstname == "Wolny Termin":
                 appointments.append({"event_date": f"{appointment.appointment_date.date()}",
                                      "event_id": f"{appointment.id}",
-                                    "event_time": f"{appointment.appointment_date.time()}",
+                                    "event_time": f"{str(appointment.appointment_date.time())[:-3]}",
                                     "event_name": f"{appointment.client_firstname}",
                                     "event_surname": f"{appointment.client_lastname}"})
     return render_template('therapist_calendar.html', user=current_user, viewed_user=user, appointments=appointments, read_only=read_only)
@@ -377,8 +377,10 @@ def calendar_api_edit_event(id):
             appointment.client_phone_number = request.form.get('event_phone')
             appointment.client_contact_form = request.form.get('event_contact_way')
             appointment.appointment_date = f"{request.form.get('event_date')} {request.form.get('event_time')}"
-            if Appointment.query.filter_by(appointment_date=appointment.appointment_date, therapist_id=id).first() != None:
+            if len(Appointment.query.filter_by(appointment_date=appointment.appointment_date, therapist_id=id).all()) > 1:
                     return json.dumps({'message': 'Juz masz spotkanie w tym terminie'}),400
             appointment.status = request.form.get('event_status')
             appointment.submit_changes(current_user.id)
+            return json.dumps({'message': 'Zapisano zmiany'}),200
+        else:
             return json.dumps({'message': 'Nie możesz edytować tego kalendarza'}),400
