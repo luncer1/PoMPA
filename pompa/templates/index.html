@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block main %}
+	<div class="container">
+		<header class="d-flex flex-wrap justify-content-center py-3 mb-4 border-bottom">
+			<a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-body-emphasis text-decoration-none">
+				<svg class="bi me-2" width="40" height="32"><use xlink:href="#bootstrap"></use></svg>
+				<span class="fs-4">PoMPA</span>
+			</a>
+			
+			<ul class="nav nav-pills">
+				<li class="nav-item"><a href="{{url_for('login')}}" class="nav-link">Zaloguj</a></li>
+			</ul>
+		</header>
+	</div>
+
+	<div class="container">
+		<div class="d-flex align-items-center justify-content-center">
+			<div id="cities" class="mt-5"></div>
+		</div>
+	</div>
+
+	<div class="container">
+		<div class="d-flex align-items-center justify-content-center">
+			<div id="therapists" class="row w-100 mt-5"></div>
+		</div>
+	</div>
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+	<script>
+	$(document).ready(function () {
+		$('#loading').css('display', 'block');
+		$.ajax({
+			type: "POST",
+			url: "{{ url_for('api_get_cities') }}",
+			success: function (data) {
+				data = JSON.parse(data)
+				data.forEach(function (value, index, arr) {
+					$('#cities').append(
+						'<div id="city" class="card" style="width: 14rem;cursor:pointer" data-city-id="'+ value['id'] +'">' +
+							'<div class="card-body text-center">' +
+								'<h5 class="card-title">' + value['city'] + '</h5>' +
+								'<h6 class="card-subtitle mb-2 text-muted">' + value['address'] + '</h6>' +
+							'</div>' +
+						'</div>'
+					)
+				})
+				$('#loading').css('display', 'none');
+			},
+			error: function (data) {
+				$('#loading').css('display', 'none');
+			}
+		})
+	})
+	$(document).on('click', '#city', function () {
+		$('#therapists').text('');
+		$('#loading').css('display', 'block');
+		$.ajax({
+			type: "POST",
+			url: "{{ url_for('api_get_therapists') }}",
+			data: {
+				'id': $(this).data('city-id')
+			},
+			success: function (data) {
+				data = JSON.parse(data)
+				data.forEach(function (value, index, arr) {
+					$('#therapists').append(
+						'<div class="col-3">' +
+						'<div id="therapist" class="card" style="cursor:pointer" data-therapist-id="'+ value['id'] +'">' +
+							'<div class="card-body text-center">' +
+								'<h5 class="card-title">' + value.firstname + ' ' + value.lastname + '</h5>' +
+								'<h6 class="card-subtitle mb-2 text-muted">' + value['description'] + '</h6>' +
+							'</div>' +
+						'</div>' +
+						'</div>'
+					)
+				})
+				$('#loading').css('display', 'none');
+			},
+			error: function (data) {
+				$('#loading').css('display', 'none');
+			}
+		})
+	})
+	$(document).on('click', '#therapist', function () {
+		var url = '/reservation/' + $(this).data('therapist-id');
+		window.location.replace(url);
+	})
+	</script>
+{% endblock main %}

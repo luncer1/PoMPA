@@ -3,7 +3,7 @@ from flask import render_template, request, redirect, url_for, flash, jsonify
 from pompa import app, db
 from pompa.forms import LoginForm, RegisterForm
 from pompa import bcrpyt
-from pompa.models import User, Permission, Role,Appointment
+from pompa.models import User, Permission, Role, Appointment, Location, Note
 from flask_login import login_required, login_user, logout_user, current_user
 import json
 import time
@@ -34,12 +34,33 @@ def check_permission(required_permissions):  # ALWAYS PASS LIST AS ARGUMENT
         return wrapper
     return decorator
 
-
-@app.route('/')
 @app.route('/dashboard')
 @login_required
 def dashboard():
     return render_template('dashboard.html', user=current_user, roles=current_user.get_all_permissions())
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/reservation/')
+def reservation():
+    return redirect(url_for('index'))    
+
+@app.route('/reservation/<id>')
+def reservation_id(id):
+    user = User.query.filter_by(id=id).first()
+    appointments = []
+
+    for appointment in user.appointments:
+        if appointment.client_firstname == "Wolny Termin":
+            appointments.append({"event_date": f"{appointment.appointment_date.date()}",
+                                "event_id": f"{appointment.id}",
+                                "event_time": f"{str(appointment.appointment_date.time())[:-3]}",
+                                "event_name": f"{appointment.client_firstname}",
+                                "event_surname": f"{appointment.client_lastname}"})
+
+    return render_template('reservation.html', viewed_user=user, appointments=appointments, read_only=True)    
 
 
 @app.route('/login', methods=['POST', 'GET'])
@@ -384,3 +405,98 @@ def calendar_api_edit_event(id):
             return json.dumps({'message': 'Zapisano zmiany'}),200
         else:
             return json.dumps({'message': 'Nie możesz edytować tego kalendarza'}),400
+        
+@app.route('/index/get/cities', methods=['POST'])
+def api_get_cities():
+    if request.method == 'POST':
+        locations = Location.query.all()
+        response = []
+
+        for location in locations:
+            response.append({'city': location.city, 'address': location.address, 'id': location.id})
+        return json.dumps(response)
+
+@app.route('/index/get/therapists', methods=['POST'])
+def api_get_therapists():
+    if request.method == 'POST':
+        id = request.form.get('id')
+
+        therapist = Role.query.filter_by(name='Terapeuta').first()
+        therapists = []
+        for user in User.query.filter_by(located_at=id).all():
+            if therapist in user.roles:
+                therapists.append(user)
+        response = []
+
+        for therapist in therapists:
+            response.append({
+                'firstname': therapist.name, 
+                'lastname': therapist.sur_name, 
+                'description' : therapist.description, 
+                'id': therapist.id
+            })
+        return json.dumps(response)
+
+@app.route('/notes', methods=['GET', 'POST'])
+@login_required    
+def notes():
+    notes = db.session.query(Note, User).filter(Note.created_by == User.id).all()
+
+    return render_template(
+        'notes.html', 
+        user=current_user,
+        roles=current_user.get_all_permissions(),
+        notes = notes
+    )
+
+@app.route('/note/create', methods=['POST'])
+@check_permission(['Dodawanie'])
+def api_note_create():
+    if request.method == 'POST':
+        content = request.form.get('content')
+
+        if content == '':
+            flash('Wiadomość nie może być pusta', 'error')
+            return '', 400
+        
+        new_note = Note(
+            content = content,
+            created_by = current_user.id,
+            modified_by = current_user.id
+        )
+        db.session.add(new_note)
+        db.session.commit()
+        
+        return json.dumps({})
+
+@app.route('/note/check', methods=['POST'])
+def api_note_check():
+    if request.method == 'POST':
+        id = request.form.get('id')
+
+        note = Note.query.filter_by(id=id).first()
+        return jsonify([note.content, note.id])
+
+@app.route('/note/remove', methods=['POST'])
+def api_note_delete():
+    if request.method == 'POST':
+        id = request.form.get('id')
+    
+        note = Note.query.filter_by(id=id).first()
+        db.session.delete(note)
+        db.session.commit()
+
+        return json.dumps({})
+
+@app.route('/note/update', methods=['POST'])
+def api_note_update():
+    if request.method == 'POST':
+        id = request.form.get('id')
+        content = request.form.get('content')
+
+        note = Note.query.filter_by(id=id).first()
+        note.content = content
+        note.modified_by = current_user.id
+        db.session.commit()
+
+        return jsonify(id)
