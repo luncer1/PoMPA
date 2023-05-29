@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block main %}
+    <div class="container">
+        <header class="d-flex flex-wrap justify-content-center py-3 mb-4 border-bottom">
+            <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-body-emphasis text-decoration-none">
+                <svg class="bi me-2" width="40" height="32"><use xlink:href="#bootstrap"></use></svg>
+                <span class="fs-4">PoMPA</span>
+            </a>
+
+            <ul class="nav nav-pills">
+                <li class="nav-item"><a href="{{url_for('login')}}" class="nav-link">Zaloguj</a></li>
+            </ul>
+        </header>
+        <h1 class="display-6 mx-5 mt-3">{{viewed_user.name}} {{viewed_user.sur_name}}</h1>
+        <h6 class="mx-5">Imię i nazwisko osoby prowadzącej</h6>
+        <a href="{{url_for('index')}}"><button type="button" class="mx-5 mt-4 btn btn-primary text-primary">Strona główna</button></a>
+    </div>
+
+    <main id="main" class="main">
+        {% include 'calendar.html'%}
+    </main>
+{% endblock main %}
+
+{% block footer %}
+<script src="https://cdn.tailwindcss.com"></script>
+{% endblock footer %}
+

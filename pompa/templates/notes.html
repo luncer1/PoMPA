@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block flashes %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% include "flash.html" %}
+        {% endif %}
+    {% endwith %}
+{% endblock %}
+
+{% block header %}
+    {% include 'top-navbar.html' %}
+{% endblock header %}
+
+{% block menu %}
+    {% include 'menu.html' %}
+{% endblock menu %}
+
+
+{% block main %}
+    <main id="main" class="main">
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalcreatenote">Dodaj notatkę</button>
+        <hr>
+
+
+        <div class="container" id ="notes">
+            <div class="row">
+                {% for note in notes %}
+                <div class="col-3">
+                    <div class="card check-note" style="cursor:pointer" data-noteid="{{note.Note.id}}" data-bs-toggle="modal" data-bs-target="#modalchecknote">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ note.Note.create_date.strftime('%Y-%m-%d') }}</h5>
+                            <h6 class="card-subtitle mb-2 text-body-secondary">{{note.User.name}} {{note.User.sur_name}}</h6>
+                            {% if note.Note.content|length > 70 %}
+                                <p class="card-text" data-contentid="{{note.Note.id}}" >{{ note.Note.content[0:70] }}...</p>
+                            {% else %}
+                                <p class="card-text" data-contentid="{{note.Note.id}}" >{{ note.Note.content }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+
+
+    </main>
+
+
+
+
+<div class="modal fade" id="modalcreatenote" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="exampleModalLabel">Stwórz notatkę</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group">
+            <span class="input-group-text">Treść</span>
+            <textarea class="form-control" rows="13" id="note-content" aria-label="content"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+        <button type="button" class="btn btn-success" id="add-note">Dodaj</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="modal fade" id="modalchecknote" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <input type="hidden" id="noteid">
+        <h1 class="modal-title fs-5" id="exampleModalLabel">Notatka</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group">
+          <span class="input-group-text">Treść</span>
+          <textarea class="form-control" rows="13" id="note-content-check" aria-label="content"></textarea>        
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger delete-note" data-noteid="">Usuń</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+        <button type="button" class="btn btn-success update-note" data-noteid="">Zapisz</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock main %}
+
+
+{% block footer %}
+    {% include 'footer.html' %}
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>    
+    <script>
+    $('#add-note').click(function () {
+        $('#loading').css('display', 'block');
+        $.ajax({
+            type: "POST",
+            url: "{{ url_for('api_note_create') }}",
+            data: {
+                content: $('#note-content').val()
+            },
+            success: function (data) {
+                $('#loading').css('display', 'none');
+                $('modalcreatenote').modal('hide');
+                window.location.reload();
+            },
+            error: function (data) {
+                $('#loading').css('display', 'none');
+                $('modalcreatenote').modal('hide');
+                window.location.reload();
+            }
+        })
+        $('#note-content').val('')
+    })
+
+    $('.check-note').click(function () {
+        $('#note-content-check').val('');
+        $('#noteid').val('');
+        $('#loading').css('display', 'block');
+        $.ajax({
+            type: "POST",
+            url: "{{ url_for('api_note_check') }}",
+            data: {
+                id: $(this).data('noteid')
+            },
+            success: function (data) {
+                $('#note-content-check').val(data[0]);
+                $('#noteid').val(data[1]);
+                $('#loading').css('display', 'none');
+            },
+            error: function (data) {
+                $('#note-content-check').val('Error');
+                $('#loading').css('display', 'none');
+            }
+        })
+    })
+
+    $('.delete-note').click(function () {
+        $('#loading').css('display', 'block');
+        $.ajax({
+            type: "POST",
+            url: "{{ url_for('api_note_delete') }}",
+            data: {
+                id: $('#noteid').val()
+            },
+            success: function (data) {
+                $('modalchecknote').modal('hide');
+                window.location.reload();
+                $('#loading').css('display', 'none');
+            },
+            error: function (data) {
+                $('modalchecknote').modal('hide');
+                window.location.reload();
+                $('#loading').css('display', 'none');
+            }
+        })
+    })
+    
+    $('.update-note').click(function () {
+        $('#loading').css('display', 'block');
+        $.ajax({
+            type: "POST",
+            url: "{{ url_for('api_note_update') }}",
+            data: {
+                id: $('#noteid').val(),
+                content: $('#note-content-check').val()
+            },
+            success: function (data) {
+                $('#loading').css('display', 'none');
+                $('modalchecknote').modal('hide');
+                window.location.reload();
+            },
+            error: function (data) {
+                $('#loading').css('display', 'none');
+                $('modalchecknote').modal('hide');
+                window.location.reload();
+            }
+        })
+    })
+    </script>
+{% endblock footer %}
