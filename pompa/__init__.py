@@ -14,14 +14,15 @@ app.config['SQLALCHEMY_POOL_TIMEOUT'] = 20
 db = SQLAlchemy(app)
 bcrpyt = Bcrypt(app)
 
+from pompa.models import Permission
 
 class Anonymous(AnonymousUserMixin):
     def __init__(self):
         self.email = 'Guest'
         self.name = 'Guest'
-
-    def get_all_permissions(self):
-        return {}
+    
+    def has_permission(self, *args):
+        return False
 
 
 login_manager = LoginManager()

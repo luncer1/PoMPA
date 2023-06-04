@@ -8,6 +8,7 @@ from flask_login import login_required, login_user, logout_user, current_user
 import json
 import time
 import datetime
+from datetime import timedelta
 
 create_database = False
 
@@ -63,28 +64,27 @@ def reservation_id(id):
     appointments = []
 
     for appointment in user.appointments:
-        if appointment.client_firstname == "Wolny Termin":
+        if appointment.client_firstname == "Wolny Termin" and appointment.appointment_date >= datetime.datetime.now() + timedelta(hours=3):
             appointments.append({"event_date": f"{appointment.appointment_date.date()}",
                                 "event_id": f"{appointment.id}",
                                 "event_time": f"{str(appointment.appointment_date.time())[:-3]}",
                                 "event_name": f"{appointment.client_firstname}",
                                 "event_surname": f"{appointment.client_lastname}"})
 
-    return render_template('reservation.html', viewed_user=user, appointments=appointments, read_only=True)    
+    return render_template('reservation.html', viewed_user=user, appointments=appointments, read_only=True, current_user=current_user)    
 
 
 @app.route('/login', methods=['POST', 'GET'])
 @login_only_for_guest
 def login():
     if create_database == True:
-        pass
         # db.create_all()
         # db.session.commit()
-        # db.session.add(Permission(name="Dodawanie",
-        #                created_by=4, modified_by=4))
+        db.session.add(Permission(name="Guest",
+                       created_by=4, modified_by=4))
         # db.session.add(Permission(name="Usuwanie",
         #                created_by=4, modified_by=4))
-        # db.session.commit()
+        db.session.commit()
     form = LoginForm()
     if request.method == 'POST':
         if form.is_submitted():
@@ -357,7 +357,7 @@ def therapist_calendar(id):
             
     else:
         for appointment in user.appointments:
-            if appointment.client_firstname == "Wolny Termin":
+            if appointment.client_firstname == "Wolny Termin" and appointment.appointment_date >= datetime.datetime.now() + timedelta(hours=3):
                 appointments.append({"event_date": f"{appointment.appointment_date.date()}",
                                      "event_id": f"{appointment.id}",
                                     "event_time": f"{str(appointment.appointment_date.time())[:-3]}",
@@ -396,7 +396,6 @@ def calendar_api_add_event(id):
         
         
 @app.route('/calendar/<id>/editevent', methods=['GET', 'POST'])
-@check_permission(['Dodawanie'])
 def calendar_api_edit_event(id):
     user = User.query.filter_by(id=id).first()
     if request.method == 'POST':
@@ -413,6 +412,19 @@ def calendar_api_edit_event(id):
             appointment.status = request.form.get('event_status')
             appointment.submit_changes(current_user.id)
             return json.dumps({'message': 'Zapisano zmiany'}),200
+        elif current_user.name == "Guest":
+            appointment = Appointment.query.filter_by(id=request.form.get('event_id')).first()
+            appointment.client_firstname = request.form.get('event_name')
+            appointment.client_lastname = request.form.get('event_surname')
+            appointment.client_email = request.form.get('event_email')
+            appointment.client_phone_number = request.form.get('event_phone')
+            appointment.client_contact_form = request.form.get('event_contact_way')
+            appointment.appointment_date = f"{request.form.get('event_date')} {request.form.get('event_time')}"
+            appointment.status = "Zarejestrowana"
+            appointment.submit_changes(user.id)
+            if datetime.datetime.strptime(request.form.get('event_date'),'%Y-%m-%d').date() < datetime.datetime.now().date():
+                    return json.dumps({'message': 'Nie możesz umówić się w tym dniu'}),400 
+            return json.dumps({'message': 'Umówiono wizytę'}),200
         else:
             return json.dumps({'message': 'Nie możesz edytować tego kalendarza'}),400
         
