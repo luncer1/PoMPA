@@ -45,7 +45,7 @@ def dashboard():
         sum([1 for _ in users]), 
         sum([1 for _ in locations]), 
         sum([1 for _ in appointments]),
-        [appointment for appointment in appointments if appointment.status == 'Zgłoszony']
+        [appointment for appointment in appointments if appointment.status == 'Zarejestrowana']
     ]
 
     return render_template('dashboard.html', user=current_user, roles=current_user.get_all_permissions(), stats=stats)
