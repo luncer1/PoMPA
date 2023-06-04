@@ -139,6 +139,7 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(200), nullable=False, unique=True)
     password = db.Column(db.String(100), nullable=False)
     birth_date = db.Column(db.Date, nullable=False)
+    # phone = db.Column(db.Integer, nullable=False)
     description = db.Column(db.String(1000), default="Brak opisu.")
     located_at = db.Column(db.Integer, db.ForeignKey('location.id'))
     photo = db.Column(db.String(500), nullable=True)

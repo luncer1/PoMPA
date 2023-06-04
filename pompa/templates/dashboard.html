@@ -16,9 +16,118 @@
 
 {% block main %}
 <main id="main" class="main">
-  {%for role in roles%}
-  {{role}}
-  {%endfor%}
+    <section class="section dashboard">
+        <div class="row">
+  
+          <!-- Left side columns -->
+          <div class="col-lg-12">
+            <div class="row">
+  
+              <!-- Sales Card -->
+              <div class="col-xxl-4 col-md-6">
+                <div class="card info-card sales-card">
+  
+                  <div class="card-body">
+                    <h5 class="card-title">Użytkownicy <span>| Łącznie</span></h5>
+  
+                    <div class="d-flex align-items-center">
+                      <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                        <i class="bi bi-person-lines-fill"></i>
+                      </div>
+                      <div class="ps-3">
+                        <h6>{{stats[0]}}</h6>  
+                      </div>
+                    </div>
+                  </div>
+  
+                </div>
+              </div><!-- End Sales Card -->
+  
+              <!-- Revenue Card -->
+              <div class="col-xxl-4 col-md-6">
+                <div class="card info-card revenue-card">
+  
+                  <div class="card-body">
+                    <h5 class="card-title">Miasta <span>| Wszystkie</span></h5>
+  
+                    <div class="d-flex align-items-center">
+                      <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                        <i class="bi bi-bounding-box-circles"></i>
+                      </div>
+                      <div class="ps-3">
+                        <h6>{{stats[1]}}</h6>
+                      </div>
+                    </div>
+                  </div>
+  
+                </div>
+              </div><!-- End Revenue Card -->
+  
+              <!-- Customers Card -->
+              <div class="col-xxl-4 col-xl-12">
+  
+                <div class="card info-card customers-card">
+                  <div class="card-body">
+                    <h5 class="card-title">Wizyt <span>| W tym roku</span></h5>
+  
+                    <div class="d-flex align-items-center">
+                      <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                        <i class="bi bi-calendar-check-fill"></i>
+                      </div>
+                      <div class="ps-3">
+                        <h6>{{stats[2]}}</h6>
+  
+                      </div>
+                    </div>
+  
+                  </div>
+                </div>
+  
+              </div><!-- End Customers Card -->
+  
+              <!-- Recent Sales -->
+              <div class="col-12">
+                <div class="card recent-sales overflow-auto">
+
+                  <div class="card-body">
+                    <h5 class="card-title">Zgłoszone wizyty <span></span></h5>
+  
+                    <div class="datatable-wrapper datatable-loading no-footer sortable searchable fixed-columns"><div class="datatable-top">
+
+                </div>
+                <div class="datatable-container">
+                    <table class="table table-hover">
+                        <thead>
+                          <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Imię i nazwisko</th>
+                            <th scope="col">E-mail</th>
+                            <th scope="col">Telefon</th>
+                            <th scope="col">Data</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                            {% for ap in stats[3] %}
+                          <tr>
+                            <th scope="row">{{loop.index}}</th>
+                            <td>{{ap.client_firstname}} {{ap.client_lastname}}</td>
+                            <td>{{ap.client_email}}</td>
+                            <td>{{ap.client_phone_number}}</td>
+                            <td>{{ap.appointment_date}}</td>
+                          </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                </div></div>
+  
+                  </div>
+  
+                </div>
+              </div><!-- End Recent Sales -->
+            </div>
+          </div><!-- End Left side columns -->
+        </div>
+      </section>
 </main>
 {% endblock main %}
 
