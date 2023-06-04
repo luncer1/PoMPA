@@ -37,7 +37,17 @@ def check_permission(required_permissions):  # ALWAYS PASS LIST AS ARGUMENT
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    return render_template('dashboard.html', user=current_user, roles=current_user.get_all_permissions())
+    users = User.query.all()
+    locations = Location.query.all()
+    appointments = Appointment.query.all()
+    stats = [
+        sum([1 for _ in users]), 
+        sum([1 for _ in locations]), 
+        sum([1 for _ in appointments]),
+        [appointment for appointment in appointments if appointment.status == 'Zgłoszony']
+    ]
+
+    return render_template('dashboard.html', user=current_user, roles=current_user.get_all_permissions(), stats=stats)
 
 @app.route('/')
 def index():
@@ -90,7 +100,7 @@ def login():
 
 
 @app.route('/register', methods=['GET', 'POST'])
-@login_only_for_guest
+@login_required
 def register():
     form = RegisterForm()
     if request.method == 'POST':
@@ -500,3 +510,21 @@ def api_note_update():
         db.session.commit()
 
         return jsonify(id)
+    
+
+@app.route('/profile/update', methods=['POST'])
+@check_permission(['Dodawanie'])
+def api_profe_update():
+    if request.method == 'POST':
+        id = current_user.id
+        about = request.form.get('about')
+        phone = request.form.get('phone')
+        email = request.form.get('email')
+
+        user = User.query.filter_by(id=id).first()
+        user.description = about
+        user.email = email
+        # user.phone = phone
+        db.session.commit()
+
+        return json.dumps({})    
